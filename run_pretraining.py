@@ -44,7 +44,7 @@ class PretrainingConfig(object):
     def __init__(self, model_name, **kwargs):
         self.model_name = model_name
         self.reporter = None
-        self.wanbd_project = None
+        self.wandb_project = None
         self.seed = 42
 
         self.debug = False  # debug mode for quickly running things
