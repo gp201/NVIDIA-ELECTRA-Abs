@@ -22,6 +22,7 @@ import json
 import time
 import datetime
 import os
+import wandb
 
 import tensorflow as tf
 import horovod.tensorflow as hvd
@@ -42,6 +43,8 @@ class PretrainingConfig(object):
 
     def __init__(self, model_name, **kwargs):
         self.model_name = model_name
+        self.reporter = None
+        self.wanbd_project = None
         self.seed = 42
 
         self.debug = False  # debug mode for quickly running things
@@ -443,6 +446,10 @@ def main(e2e_start_time):
                 eta=utils.get_readable_time(
                     (time.time() - train_start) / (step - start_step) * (config.num_train_steps - step))),
                 all_rank=True)
+            
+            if config.reporter == "wandb":
+                wandb.init(project=config.wanbd_project, name=config.model_name, config=config.__dict__)
+                wandb.log(log_info_dict, step=step)
 
             with train_summary_writer.as_default():
                 for key, m in metrics.items():

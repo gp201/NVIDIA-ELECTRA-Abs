@@ -1996,15 +1996,15 @@ class BertTokenizer(PreTrainedTokenizer):
     def __init__(
         self,
         vocab_file,
-        do_lower_case=True,
-        do_basic_tokenize=True,
+        do_lower_case=False,
+        do_basic_tokenize=False,
         never_split=None,
         unk_token="[UNK]",
         sep_token="[SEP]",
         pad_token="[PAD]",
         cls_token="[CLS]",
         mask_token="[MASK]",
-        tokenize_chinese_chars=True,
+        tokenize_chinese_chars=False,
         **kwargs
     ):
         super().__init__(
@@ -2025,12 +2025,13 @@ class BertTokenizer(PreTrainedTokenizer):
             )
         self.vocab = load_vocab(vocab_file)
         self.ids_to_tokens = collections.OrderedDict([(ids, tok) for tok, ids in self.vocab.items()])
-        self.do_basic_tokenize = do_basic_tokenize
-        if do_basic_tokenize:
-            self.basic_tokenizer = BasicTokenizer(
-                do_lower_case=do_lower_case, never_split=never_split, tokenize_chinese_chars=tokenize_chinese_chars
-            )
-        self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab, unk_token=self.unk_token)
+        # self.do_basic_tokenize = do_basic_tokenize
+        # if do_basic_tokenize:
+        #     self.basic_tokenizer = BasicTokenizer(
+        #         do_lower_case=do_lower_case, never_split=never_split, tokenize_chinese_chars=tokenize_chinese_chars
+        #     )
+        # self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab, unk_token=self.unk_token)
+        self.custom_tokenizer = CharTokenizer(vocab=self.vocab, unk_token=self.unk_token)
 
     @property
     def vocab_size(self):
@@ -2041,12 +2042,14 @@ class BertTokenizer(PreTrainedTokenizer):
 
     def _tokenize(self, text):
         split_tokens = []
-        if self.do_basic_tokenize:
-            for token in self.basic_tokenizer.tokenize(text, never_split=self.all_special_tokens):
-                for sub_token in self.wordpiece_tokenizer.tokenize(token):
-                    split_tokens.append(sub_token)
-        else:
-            split_tokens = self.wordpiece_tokenizer.tokenize(text)
+        # if self.do_basic_tokenize:
+        #     for token in self.basic_tokenizer.tokenize(text, never_split=self.all_special_tokens):
+        #         for sub_token in self.wordpiece_tokenizer.tokenize(token):
+        #             split_tokens.append(sub_token)
+        # else:
+        #     split_tokens = self.wordpiece_tokenizer.tokenize(text)
+        for token in self.custom_tokenizer.tokenize(text):
+            split_tokens.append(token)
         return split_tokens
 
     def _convert_token_to_id(self, token):
@@ -2374,6 +2377,30 @@ class WordpieceTokenizer(object):
             else:
                 output_tokens.extend(sub_tokens)
         return output_tokens
+
+
+class CharTokenizer(object):
+    """Runs a Custom tokenziation that splits a string into its characters."""
+    def __init__(self, vocab, unk_token="[UNK]"):
+        self.vocab = vocab
+        self.unk_token = unk_token
+
+    def tokenize(self,text):
+        """Tokenizes a sequence of text into its characters.
+        This splits a sequence into its characters and replaces unknown protiens with the unknown token.
+        For example:
+        input = "EVQLVESGGVVVQ"
+        output = ["E", "V", "Q", "L", "V", "E", "S", "G", "G", "V", "V", "V", "Q"]
+        Args:
+        text: A sequence.
+        Returns:
+        A list of characters.
+        """
+        chars = list(text)
+        for i in range(len(chars)):
+            if chars[i] not in self.vocab:
+                chars[i] = self.unk_token
+        return chars
 
 
 def _is_whitespace(char):
