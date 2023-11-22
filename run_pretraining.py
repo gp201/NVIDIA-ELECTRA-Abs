@@ -241,6 +241,8 @@ def main(e2e_start_time):
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", required=True)
     parser.add_argument("--model_size", default="base", type=str, help="base or large")
+    parser.add_argument("--reporter", default=None, type=str, help="Currently only wandb is supported.")
+    parser.add_argument("--wandb_project", default=None, type=str, help="wandb project name")
     parser.add_argument("--pretrain_tfrecords", type=str)
     parser.add_argument("--phase2", action='store_true')
     parser.add_argument("--fp16_compression", action='store_true')
