@@ -164,7 +164,7 @@ class ExampleWriter(object):
     for writer in self._writers:
       writer.close()
     if args.download_vocab is not None and not os.path.exists(args.download_vocab):
-      self._example_builder.download_vocab(os.path.join(args.download_vocab, 'vocab.json'))
+      self._example_builder.download_vocab(args.download_vocab)
       print('vocab.json downloaded to {}'.format(args.download_vocab))
 
 
