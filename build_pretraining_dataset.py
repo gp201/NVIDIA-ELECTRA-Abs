@@ -22,6 +22,7 @@ import os
 import random
 import time
 import tensorflow as tf
+import json
 
 import utils
 from tokenization import ElectraTokenizer
@@ -55,6 +56,12 @@ class ExampleBuilder(object):
     if self._current_length >= self._target_length:
       return self._create_example()
     return None
+  
+  def download_vocab(self, vocab_json='vocab.json'):
+    vocab = self._tokenizer.get_vocab()
+    # save as json file
+    with open(vocab_json, 'w') as f:
+      json.dump(vocab, f)
 
   def _create_example(self):
     """Creates a pre-training example from the current list of sentences."""
@@ -153,9 +160,12 @@ class ExampleWriter(object):
             example.SerializeToString())
         self.n_written += 1
 
-  def finish(self):
+  def finish(self, args=None):
     for writer in self._writers:
       writer.close()
+    if args.download_vocab is not None and not os.path.exists(args.download_vocab):
+      self._example_builder.download_vocab(os.path.join(args.download_vocab, 'vocab.json'))
+      print('vocab.json downloaded to {}'.format(args.download_vocab))
 
 
 def write_examples(job_id, args):
@@ -191,7 +201,7 @@ def write_examples(job_id, args):
               int((len(fnames) - file_no) / (file_no / elapsed)),
               example_writer.n_written))
     example_writer.write_examples(os.path.join(args.corpus_dir, fname))
-  example_writer.finish()
+  example_writer.finish(args)
   log("Done!")
 
 # python build_pretraining_dataset --corpus-dir
@@ -216,6 +226,8 @@ def main():
   parser.add_argument("--num-out-files", default=1000, type=int,
                       help="Number of output files.")
   parser.add_argument("--seed", default=1314, type=int)
+  parser.add_argument("--download-vocab", default=None, type=str,
+                      help="Download vocab to json file")
   args = parser.parse_args()
 
   random.seed(args.seed)
