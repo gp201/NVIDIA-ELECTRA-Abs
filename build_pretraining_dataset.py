@@ -37,25 +37,33 @@ def create_int_feature(values):
 class ExampleBuilder(object):
   """Given a stream of input text, creates pretraining examples."""
 
-  def __init__(self, tokenizer, max_length):
+  def __init__(self, tokenizer, max_length, seperator):
     self._tokenizer = tokenizer
     self._current_sentences = []
     self._current_length = 0
     self._max_length = max_length
     self._target_length = max_length
+    self._seperator = seperator
 
   def add_line(self, line):
     """Adds a line of text to the current example being built."""
-    line = line.strip().replace("\n", " ")
-    if (not line) and self._current_length != 0:  # empty lines separate docs
-      return self._create_example()
-    bert_tokens = self._tokenizer.tokenize(line)
-    bert_tokids = self._tokenizer.convert_tokens_to_ids(bert_tokens)
-    self._current_sentences.append(bert_tokids)
-    self._current_length += len(bert_tokids)
-    if self._current_length >= self._target_length:
-      return self._create_example()
-    return None
+    line = line.strip().replace("\n", "")
+    # if (not line) and self._current_length != 0:  # empty lines separate docs
+    #   return self._create_example_for_seq()
+    # every new line is a new example
+    if self._seperator is None:
+      bert_tokens = self._tokenizer.tokenize(line)
+      bert_tokids = self._tokenizer.convert_tokens_to_ids(bert_tokens)
+      self._current_sentences.append(bert_tokids)
+      self._current_length += len(bert_tokids)
+    else:
+      line = line.split(self._seperator)
+      for seq in line:
+        bert_tokens = self._tokenizer.tokenize(seq)
+        bert_tokids = self._tokenizer.convert_tokens_to_ids(bert_tokens)
+        self._current_sentences.append(bert_tokids)
+        self._current_length += len(bert_tokids)
+    return self._create_example_for_seq()
   
   def download_vocab(self, vocab_json='vocab.json'):
     vocab = self._tokenizer.get_vocab()
@@ -66,6 +74,8 @@ class ExampleBuilder(object):
   def _create_example(self):
     """Creates a pre-training example from the current list of sentences."""
     # small chance to only have one segment as in classification tasks
+    # What's going on here????
+    # https://github.com/google-research/bert/blob/eedf5716ce1268e56f0a50264a88cafad334ac61/create_pretraining_data.py#L232-L247
     if random.random() < 0.1:
       first_segment_target_length = 100000
     else:
@@ -102,6 +112,19 @@ class ExampleBuilder(object):
       self._target_length = self._max_length
 
     return self._make_tf_example(first_segment, second_segment)
+  
+  def _create_example_for_seq_for_seq(self):
+    """Creates a pre-training example for a sequence."""
+    first_segment = []
+    second_segment = []
+    if len(self._current_sentences) == 1:
+      first_segment = self._current_sentences[0]
+    elif len(self._current_sentences) == 2:
+      first_segment = self._current_sentences[0]
+      second_segment = self._current_sentences[1]
+    else:
+      raise ValueError('The length of current sentences is not 1 or 2.')
+    return self._make_tf_example(first_segment, second_segment)
 
   def _make_tf_example(self, first_segment, second_segment):
     """Converts two "segments" of text into a tf.train.Example."""
@@ -128,12 +151,15 @@ class ExampleWriter(object):
 
   def __init__(self, job_id, vocab_file, output_dir, max_seq_length,
                num_jobs, blanks_separate_docs, do_lower_case,
-               num_out_files=1000):
+               seperator, num_out_files=1000):
     self._blanks_separate_docs = blanks_separate_docs
     tokenizer = ElectraTokenizer(
         vocab_file=vocab_file,
         do_lower_case=do_lower_case)
-    self._example_builder = ExampleBuilder(tokenizer, max_seq_length)
+    self._example_builder = ExampleBuilder(
+      	tokenizer,
+      	max_seq_length,
+      	seperator=seperator)
     self._writers = []
     for i in range(num_out_files):
       if i % num_jobs == job_id:
@@ -184,7 +210,8 @@ def write_examples(job_id, args):
       num_jobs=args.num_processes,
       blanks_separate_docs=args.blanks_separate_docs,
       do_lower_case=args.do_lower_case,
-      num_out_files=args.num_out_files,
+      seperator=args.seperator,
+      num_out_files=args.num_out_files
   )
   log("Writing tf examples")
   fnames = sorted(tf.io.gfile.listdir(args.corpus_dir))
@@ -228,6 +255,8 @@ def main():
   parser.add_argument("--seed", default=1314, type=int)
   parser.add_argument("--download-vocab", default=None, type=str,
                       help="Download vocab to json file")
+  parser.add_argument("--seperator", default=None, type=str,
+                      help="Seperator between two sequences in the dataset.")
   args = parser.parse_args()
 
   random.seed(args.seed)
