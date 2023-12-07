@@ -1,0 +1,35 @@
+# Reference https://www.kubeflow.org/docs/components/notebooks/container-images/#custom-images
+
+ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:20.07-tf2-py3
+FROM ${FROM_IMAGE_NAME}
+
+ENV NB_USER jovyan
+ENV NB_UID 1000
+ENV NB_PREFIX /
+ENV HOME /home/$NB_USER
+ENV SHELL /bin/bash
+
+RUN apt-get update && apt-get install -y pbzip2 pv bzip2 cabextract
+
+ENV DATA_PREP_WORKING_DIR /workspace/electra/data
+
+WORKDIR /workspace
+RUN git clone https://github.com/attardi/wikiextractor.git && cd wikiextractor && git checkout 6408a430fc504a38b04d37ce5e7fc740191dee16 && cd ..
+RUN git clone https://github.com/soskek/bookcorpus.git
+
+WORKDIR /workspace/electra
+RUN pip install --no-cache-dir \
+ tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers==0.7.0 \
+ git+https://github.com/NVIDIA/dllogger \
+ nvidia-ml-py3==7.352.0
+
+RUN apt-get install -y iputils-ping
+COPY . .
+
+USER root
+RUN mkdir -p /tmp_home \
+ && cp -r ${HOME} /tmp_home \
+ && chown -R ${NB_USER}:users /tmp_home
+USER $NB_UID
+
+EXPOSE 8888
