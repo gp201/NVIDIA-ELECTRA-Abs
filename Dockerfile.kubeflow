@@ -27,9 +27,18 @@ RUN apt-get install -y iputils-ping
 COPY . .
 
 USER root
-# RUN mkdir -p /tmp_home \
-#  && cp -r ${HOME} /tmp_home \
-#  && chown -R ${NB_USER}:users /tmp_home
+# create user and set required ownership
+RUN useradd -M -s /bin/bash -N -u ${NB_UID} ${NB_USER} \
+ && mkdir -p ${HOME} \
+ && chown -R ${NB_USER}:users ${HOME} \
+ && chown -R ${NB_USER}:users /usr/local/bin
+
+# set locale configs
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+ && locale-gen
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
 USER $NB_UID
 
 EXPOSE 8888
