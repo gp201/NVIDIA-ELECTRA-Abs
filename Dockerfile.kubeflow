@@ -1,7 +1,11 @@
 # Reference https://www.kubeflow.org/docs/components/notebooks/container-images/#custom-images
 
-ARG FROM_IMAGE_NAME=nvcr.io/nvidia/tensorflow:20.07-tf2-py3
-FROM ${FROM_IMAGE_NAME}
+# ARG BASE_IMAGE=kubeflownotebookswg/jupyter
+ARG NVIDIA_IMAGE=nvcr.io/nvidia/tensorflow:20.07-tf2-py3
+
+# FROM $BASE_IMAGE as builder
+
+FROM $NVIDIA_IMAGE
 
 ENV NB_USER jovyan
 ENV NB_UID 1000
@@ -9,7 +13,7 @@ ENV NB_PREFIX /
 ENV HOME /home/$NB_USER
 ENV SHELL /bin/bash
 
-RUN apt-get update && apt-get install -y pbzip2 pv bzip2 cabextract
+RUN apt-get update && apt-get install -y pbzip2 pv bzip2 cabextract locales
 
 ENV DATA_PREP_WORKING_DIR /workspace/electra/data
 
@@ -42,3 +46,7 @@ ENV LC_ALL en_US.UTF-8
 USER $NB_UID
 
 EXPOSE 8888
+
+ENV NB_PREFIX /
+ 
+CMD ["bash","-c", "jupyter notebook --notebook-dir=/home/jovyan --ip=0.0.0.0 --no-browser --allow-root --port=8888 --NotebookApp.token='' --NotebookApp.password='' --NotebookApp.allow_origin='*' --NotebookApp.base_url=${NB_PREFIX}"]
