@@ -123,7 +123,7 @@ class ExampleBuilder(object):
       first_segment = self._current_sentences[0]
       second_segment = self._current_sentences[1]
     else:
-      raise ValueError('The length of current sentences is not 1 or 2.')
+      raise ValueError('The length of current sentences is' + str(len(self._current_sentences)) + 'it should be 1 or 2.')
     return self._make_tf_example(first_segment, second_segment)
 
   def _make_tf_example(self, first_segment, second_segment):
