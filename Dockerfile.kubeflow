@@ -151,8 +151,8 @@ RUN python3 -m pip install -r /tmp/requirements.txt --quiet --no-cache-dir \
  && rm -f /tmp/requirements.txt
 
 # s6 - copy scripts
-RUN mkdir -p s6 \
- && cd s6 \
+RUN mkdir -p /s6 \
+ && cd /s6 \
  && mkdir -p cont-init.d \
  && mkdir -p services.d/jupyterlab \
  && wget -O cont-init.d/01-copy-tmp-home https://raw.githubusercontent.com/kubeflow/kubeflow/master/components/example-notebook-servers/jupyter/s6/cont-init.d/01-copy-tmp-home \
