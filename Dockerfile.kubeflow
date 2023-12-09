@@ -88,9 +88,6 @@ ENTRYPOINT ["/init"]
 
 FROM base as build-codeserver
 
-ARG BASE_IMG=<base>
-FROM $BASE_IMG
-
 ARG TARGETARCH
 
 # args - software versions
