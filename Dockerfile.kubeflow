@@ -154,16 +154,6 @@ RUN echo "jupyterlab ==${JUPYTERLAB_VERSION}" >> ${CONDA_DIR}/conda-meta/pinned 
     notebook==${JUPYTER_VERSION} \
  && conda clean -a -f -y
 
-RUN mkdir -p /etc \
- && cd /etc \
- && mkdir -p /etc/cont-init.d \
- && mkdir -p /etc/services.d/jupyterlab \
- && wget -O /etc/cont-init.d/01-copy-tmp-home https://raw.githubusercontent.com/kubeflow/kubeflow/master/components/example-notebook-servers/jupyter/s6/cont-init.d/01-copy-tmp-home \
- && wget -O /etc/services.d/jupyterlab/run https://raw.githubusercontent.com/kubeflow/kubeflow/master/components/example-notebook-servers/jupyter/s6/services.d/jupyterlab/run
-
-RUN chmod +x /etc/cont-init.d/01-copy-tmp-home \
- && chmod +x /etc/services.d/jupyterlab/run
-
 # s6 - copy scripts
 COPY --chown=${NB_USER}:users --chmod=755 s6/ /etc
 
