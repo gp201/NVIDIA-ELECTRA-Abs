@@ -113,7 +113,7 @@ class ExampleBuilder(object):
 
     return self._make_tf_example(first_segment, second_segment)
   
-  def _create_example_for_seq_for_seq(self):
+  def _create_example_for_seq(self):
     """Creates a pre-training example for a sequence."""
     first_segment = []
     second_segment = []

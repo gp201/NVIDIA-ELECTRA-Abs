@@ -39,6 +39,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     wget \
     xz-utils \
     zip \
+    pbzip2 \
+    pv \
+    cabextract \
+    iputils-ping \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
@@ -99,6 +103,11 @@ USER root
 RUN curl -fsSL "https://github.com/coder/code-server/releases/download/${CODESERVER_VERSION}/code-server_${CODESERVER_VERSION/v/}_${TARGETARCH}.deb" -o /tmp/code-server.deb \
  && dpkg -i /tmp/code-server.deb \
  && rm -f /tmp/code-server.deb
+
+RUN pip install --no-cache-dir \
+ tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers \
+ git+https://github.com/NVIDIA/dllogger \
+ nvidia-ml-py3==7.352.0
 
 # s6 - copy scripts
 COPY --chown=${NB_USER}:users --chmod=755 s6/ /etc
