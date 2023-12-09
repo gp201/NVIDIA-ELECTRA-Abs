@@ -1,36 +1,74 @@
 # Reference https://www.kubeflow.org/docs/components/notebooks/container-images/#custom-images
+FROM nvcr.io/nvidia/tensorflow:20.07-tf2-py3
 
-# ARG BASE_IMAGE=kubeflownotebookswg/jupyter
-ARG NVIDIA_IMAGE=nvcr.io/nvidia/tensorflow:20.07-tf2-py3
+ARG TARGETARCH
 
-# FROM $BASE_IMAGE as builder
-
-FROM $NVIDIA_IMAGE
-
+# common environemnt variables
 ENV NB_USER jovyan
 ENV NB_UID 1000
 ENV NB_PREFIX /
 ENV HOME /home/$NB_USER
 ENV SHELL /bin/bash
 
-RUN apt-get update && apt-get install -y pbzip2 pv bzip2 cabextract locales
+# args - software versions
+ARG KUBECTL_VERSION=v1.27.6
+ARG S6_VERSION=v3.1.5.0
 
-ENV DATA_PREP_WORKING_DIR /workspace/electra/data
+# set shell to bash
+SHELL ["/bin/bash", "-c"]
 
-WORKDIR /workspace
-RUN git clone https://github.com/attardi/wikiextractor.git && cd wikiextractor && git checkout 6408a430fc504a38b04d37ce5e7fc740191dee16 && cd ..
-RUN git clone https://github.com/soskek/bookcorpus.git
+# install - usefull linux packages
+RUN export DEBIAN_FRONTEND=noninteractive \
+ && apt-get -yq update \
+ && apt-get -yq install --no-install-recommends \
+    apt-transport-https \
+    bash \
+    bzip2 \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    gnupg2 \
+    locales \
+    lsb-release \
+    nano \
+    software-properties-common \
+    tzdata \
+    unzip \
+    vim \
+    wget \
+    xz-utils \
+    zip \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /workspace/electra
-RUN pip install --no-cache-dir \
- tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers==0.7.0 \
- git+https://github.com/NVIDIA/dllogger \
- nvidia-ml-py3==7.352.0
+# install - s6 overlay
+RUN case "${TARGETARCH}" in \
+      amd64) S6_ARCH="x86_64" ;; \
+      arm64) S6_ARCH="aarch64" ;; \
+      ppc64le) S6_ARCH="ppc64le" ;; \
+      *) echo "Unsupported architecture: ${TARGETARCH}"; exit 1 ;; \
+    esac \
+ && curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" -o /tmp/s6-overlay-noarch.tar.xz \
+ && curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz.sha256" -o /tmp/s6-overlay-noarch.tar.xz.sha256 \
+ && echo "$(cat /tmp/s6-overlay-noarch.tar.xz.sha256 | awk '{ print $1; }')  /tmp/s6-overlay-noarch.tar.xz" | sha256sum -c - \
+ && curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-${S6_ARCH}.tar.xz" -o /tmp/s6-overlay-${S6_ARCH}.tar.xz \
+ && curl -fsSL "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-${S6_ARCH}.tar.xz.sha256" -o /tmp/s6-overlay-${S6_ARCH}.tar.xz.sha256 \
+ && echo "$(cat /tmp/s6-overlay-${S6_ARCH}.tar.xz.sha256 | awk '{ print $1; }')  /tmp/s6-overlay-${S6_ARCH}.tar.xz" | sha256sum -c - \
+ && tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz \
+ && tar -C / -Jxpf /tmp/s6-overlay-${S6_ARCH}.tar.xz \
+ && rm /tmp/s6-overlay-noarch.tar.xz  \
+       /tmp/s6-overlay-noarch.tar.xz.sha256 \
+       /tmp/s6-overlay-${S6_ARCH}.tar.xz \
+       /tmp/s6-overlay-${S6_ARCH}.tar.xz.sha256
 
-RUN apt-get install -y iputils-ping
-COPY . .
+# install - kubectl
+RUN curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl" -o /usr/local/bin/kubectl \
+ && curl -fsSL "https://dl.k8s.io/${KUBECTL_VERSION}/bin/linux/${TARGETARCH}/kubectl.sha256" -o /tmp/kubectl.sha256 \
+ && echo "$(cat /tmp/kubectl.sha256 | awk '{ print $1; }')  /usr/local/bin/kubectl" | sha256sum -c - \
+ && rm /tmp/kubectl.sha256 \
+ && chmod +x /usr/local/bin/kubectl
 
-USER root
 # create user and set required ownership
 RUN useradd -M -s /bin/bash -N -u ${NB_UID} ${NB_USER} \
  && mkdir -p ${HOME} \
@@ -43,10 +81,7 @@ RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
+
 USER $NB_UID
 
-EXPOSE 8888
-
-ENV NB_PREFIX /
- 
-CMD ["bash","-c", "jupyter notebook --notebook-dir=/home/jovyan --ip=0.0.0.0 --no-browser --allow-root --port=8888 --NotebookApp.token='' --NotebookApp.password='' --NotebookApp.allow_origin='*' --NotebookApp.base_url=${NB_PREFIX}"]
+ENTRYPOINT ["/init"]
