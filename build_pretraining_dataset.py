@@ -142,7 +142,7 @@ class ExampleBuilder(object):
       input_ids += second_segment + [vocab["[SEP]"]]
       segment_ids += [1] * (len(second_segment) + 1)
     input_mask = [1] * len(input_ids)
-    input_ids += vocab["[PAD]"] * (self._max_length - len(input_ids))
+    input_ids += [int(vocab["[PAD]"])] * (self._max_length - len(input_ids))
     input_mask += [0] * (self._max_length - len(input_mask))
     segment_ids += [0] * (self._max_length - len(segment_ids))
     tf_example = tf.train.Example(features=tf.train.Features(feature={
