@@ -50,6 +50,9 @@ class ExampleBuilder(object):
     line = line.strip().replace("\n", "")
     # if (not line) and self._current_length != 0:  # empty lines separate docs
     #   return self._create_example_for_seq()
+    # if empty line skip it
+    if not line:
+      return None
     # every new line is a new example
     if self._seperator is None:
       bert_tokens = self._tokenizer.tokenize(line)
@@ -123,7 +126,11 @@ class ExampleBuilder(object):
       first_segment = self._current_sentences[0]
       second_segment = self._current_sentences[1]
     else:
-      raise ValueError('The length of current sentences is' + str(len(self._current_sentences)) + 'it should be 1 or 2.')
+      raise ValueError('The length of current sentences is ' + str(len(self._current_sentences)) + ' it should be 1 or 2.')
+    
+    # prepare to start building the next example
+    self._current_sentences = []
+    self._current_length = 0
     return self._make_tf_example(first_segment, second_segment)
 
   def _make_tf_example(self, first_segment, second_segment):
@@ -135,7 +142,7 @@ class ExampleBuilder(object):
       input_ids += second_segment + [vocab["[SEP]"]]
       segment_ids += [1] * (len(second_segment) + 1)
     input_mask = [1] * len(input_ids)
-    input_ids += [0] * (self._max_length - len(input_ids))
+    input_ids += vocab["[PAD]"] * (self._max_length - len(input_ids))
     input_mask += [0] * (self._max_length - len(input_mask))
     segment_ids += [0] * (self._max_length - len(segment_ids))
     tf_example = tf.train.Example(features=tf.train.Features(feature={
