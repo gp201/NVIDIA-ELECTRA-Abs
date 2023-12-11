@@ -267,6 +267,7 @@ def main(e2e_start_time):
     parser.add_argument("--restore_checkpoint", default=None, type=str)
     parser.add_argument("--load_weights", action='store_true')
     parser.add_argument("--weights_dir")
+    parser.add_argument("--vocab_file", required=True, help="Location of vocabulary file.")
 
     parser.add_argument("--optimizer", default="adam", type=str, help="adam or lamb")
     parser.add_argument("--skip_adaptive", action='store_true', help="Whether to apply adaptive LR on LayerNorm and biases")

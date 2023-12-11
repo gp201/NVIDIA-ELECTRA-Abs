@@ -43,6 +43,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     pv \
     cabextract \
     iputils-ping \
+    htop \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
@@ -105,7 +106,7 @@ RUN curl -fsSL "https://github.com/coder/code-server/releases/download/${CODESER
  && rm -f /tmp/code-server.deb
 
 RUN pip install --no-cache-dir \
- tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers \
+ tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers wandb \
  git+https://github.com/NVIDIA/dllogger \
  nvidia-ml-py3==7.352.0
 

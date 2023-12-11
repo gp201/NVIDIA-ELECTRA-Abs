@@ -23,7 +23,7 @@ RUN git clone https://github.com/soskek/bookcorpus.git
 
 WORKDIR /workspace/electra
 RUN pip install --no-cache-dir \
- tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers==0.7.0 \
+ tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers==0.7.0 wandb \
  git+https://github.com/NVIDIA/dllogger \
  nvidia-ml-py3==7.352.0
 
