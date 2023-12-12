@@ -1,5 +1,5 @@
 # Reference https://www.kubeflow.org/docs/components/notebooks/container-images/#custom-images
-FROM nvcr.io/nvidia/tensorflow:23.11-tf2-py3 AS base
+FROM nvcr.io/nvidia/tensorflow:20.07-tf2-py3 AS base
 
 ARG TARGETARCH
 
