@@ -105,11 +105,6 @@ RUN curl -fsSL "https://github.com/coder/code-server/releases/download/${CODESER
  && dpkg -i /tmp/code-server.deb \
  && rm -f /tmp/code-server.deb
 
-RUN pip install --no-cache-dir \
- tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers wandb \
- git+https://github.com/NVIDIA/dllogger \
- nvidia-ml-py3==7.352.0
-
 # s6 - copy scripts
 COPY --chown=${NB_USER}:users --chmod=755 s6/ /etc
 
