@@ -451,7 +451,7 @@ def main(e2e_start_time):
                 all_rank=True)
             
             if config.reporter == "wandb":
-                wandb.init(project=config.wanbd_project, name=config.model_name, config=config.__dict__)
+                wandb.init(project=config.wandb_project, name=config.model_name, config=config.__dict__)
                 wandb.log(log_info_dict, step=step)
 
             with train_summary_writer.as_default():

@@ -139,6 +139,8 @@ class AdamWeightDecay(tf.keras.optimizers.Adam):
     ):
         super().__init__(learning_rate, beta_1, beta_2, epsilon, amsgrad, name, **kwargs)
         self.weight_decay_rate = weight_decay_rate
+        # This has been changed from the original implementation since we're using tensorflow 2.14.0
+        self.weight_decay = weight_decay_rate
         self._include_in_weight_decay = include_in_weight_decay
         self._exclude_from_weight_decay = exclude_from_weight_decay
         self.layer_decay = layer_decay
