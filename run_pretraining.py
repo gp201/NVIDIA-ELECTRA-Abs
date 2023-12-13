@@ -73,7 +73,7 @@ class PretrainingConfig(object):
         # optimization
         self.learning_rate = 5e-4
         self.lr_decay_power = 0.5
-        self.weight_decay_rate = 0.01
+        self.weight_decay = 0.01
         self.num_warmup_steps = 10000
         self.opt_beta_1 = 0.878
         self.opt_beta_2 = 0.974
@@ -359,7 +359,7 @@ def main(e2e_start_time):
         init_lr=config.learning_rate,
         num_train_steps=config.num_train_steps,
         num_warmup_steps=config.num_warmup_steps,
-        weight_decay_rate=config.weight_decay_rate,
+        weight_decay=config.weight_decay,
         optimizer=config.optimizer,
         skip_adaptive=config.skip_adaptive,
         power=config.lr_decay_power,
