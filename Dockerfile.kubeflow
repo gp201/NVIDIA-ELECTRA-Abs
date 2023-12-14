@@ -1,5 +1,5 @@
 # Reference https://www.kubeflow.org/docs/components/notebooks/container-images/#custom-images
-FROM nvcr.io/nvidia/tensorflow:23.11-tf2-py3 AS base
+FROM nvcr.io/nvidia/tensorflow:20.07-tf2-py3 AS base
 
 ARG TARGETARCH
 
@@ -106,7 +106,7 @@ RUN curl -fsSL "https://github.com/coder/code-server/releases/download/${CODESER
  && rm -f /tmp/code-server.deb
 
 RUN pip install --no-cache-dir \
- tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers wandb \
+ tqdm boto3 requests six ipdb h5py nltk progressbar filelock tokenizers==0.7.0 wandb \
  git+https://github.com/NVIDIA/dllogger \
  nvidia-ml-py3==7.352.0
 
