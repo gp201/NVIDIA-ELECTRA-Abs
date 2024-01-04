@@ -22,6 +22,7 @@ import json
 import time
 import datetime
 import os
+import wandb
 
 import tensorflow as tf
 import horovod.tensorflow as hvd
@@ -42,6 +43,8 @@ class PretrainingConfig(object):
 
     def __init__(self, model_name, **kwargs):
         self.model_name = model_name
+        self.reporter = None
+        self.wandb_project = None
         self.seed = 42
 
         self.debug = False  # debug mode for quickly running things
@@ -70,7 +73,7 @@ class PretrainingConfig(object):
         # optimization
         self.learning_rate = 5e-4
         self.lr_decay_power = 0.5
-        self.weight_decay_rate = 0.01
+        self.weight_decay = 0.01
         self.num_warmup_steps = 10000
         self.opt_beta_1 = 0.878
         self.opt_beta_2 = 0.974
@@ -238,6 +241,8 @@ def main(e2e_start_time):
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", required=True)
     parser.add_argument("--model_size", default="base", type=str, help="base or large")
+    parser.add_argument("--reporter", default=None, type=str, help="Currently only wandb is supported.")
+    parser.add_argument("--wandb_project", default=None, type=str, help="wandb project name")
     parser.add_argument("--pretrain_tfrecords", type=str)
     parser.add_argument("--phase2", action='store_true')
     parser.add_argument("--fp16_compression", action='store_true')
@@ -262,6 +267,7 @@ def main(e2e_start_time):
     parser.add_argument("--restore_checkpoint", default=None, type=str)
     parser.add_argument("--load_weights", action='store_true')
     parser.add_argument("--weights_dir")
+    parser.add_argument("--vocab_file", required=True, help="Location of vocabulary file.")
 
     parser.add_argument("--optimizer", default="adam", type=str, help="adam or lamb")
     parser.add_argument("--skip_adaptive", action='store_true', help="Whether to apply adaptive LR on LayerNorm and biases")
@@ -353,7 +359,7 @@ def main(e2e_start_time):
         init_lr=config.learning_rate,
         num_train_steps=config.num_train_steps,
         num_warmup_steps=config.num_warmup_steps,
-        weight_decay_rate=config.weight_decay_rate,
+        weight_decay=config.weight_decay,
         optimizer=config.optimizer,
         skip_adaptive=config.skip_adaptive,
         power=config.lr_decay_power,
@@ -443,6 +449,10 @@ def main(e2e_start_time):
                 eta=utils.get_readable_time(
                     (time.time() - train_start) / (step - start_step) * (config.num_train_steps - step))),
                 all_rank=True)
+            
+            if config.reporter == "wandb":
+                wandb.init(project=config.wandb_project, name=config.model_name, config=config.__dict__)
+                wandb.log(log_info_dict, step=step)
 
             with train_summary_writer.as_default():
                 for key, m in metrics.items():

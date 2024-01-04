@@ -63,7 +63,7 @@ class WarmUp(tf.keras.optimizers.schedules.LearningRateSchedule):
         }
 
 
-def create_optimizer(init_lr, num_train_steps, num_warmup_steps, weight_decay_rate=0.01,
+def create_optimizer(init_lr, num_train_steps, num_warmup_steps, weight_decay=0.01,
                      layerwise_lr_decay=-1, n_transformer_layers=None, clip_norm=1.0,
                      optimizer="adam", skip_adaptive=False, power=1.0, beta_1=0.9, beta_2=0.999, end_lr=0.0):
     """Creates an optimizer with learning rate schedule."""
@@ -82,7 +82,7 @@ def create_optimizer(init_lr, num_train_steps, num_warmup_steps, weight_decay_ra
     if optimizer == "adam":
         optimizer = AdamWeightDecay(
             learning_rate=learning_rate_fn,
-            weight_decay_rate=weight_decay_rate,
+            weight_decay=weight_decay,
             layer_decay=layer_decay,
             beta_1=beta_1,
             beta_2=beta_2,
@@ -99,7 +99,7 @@ def create_optimizer(init_lr, num_train_steps, num_warmup_steps, weight_decay_ra
         
         optimizer = tfa_optimizers.LAMB(
             learning_rate=learning_rate_fn,
-            weight_decay_rate=weight_decay_rate,
+            weight_decay=weight_decay,
             beta_1=beta_1,
             beta_2=beta_2,
             epsilon=1e-6,
@@ -129,7 +129,7 @@ class AdamWeightDecay(tf.keras.optimizers.Adam):
             beta_2=0.999,
             epsilon=1e-7,
             amsgrad=False,
-            weight_decay_rate=0.0,
+            weight_decay=0.0,
             include_in_weight_decay=None,
             exclude_from_weight_decay=None,
             layer_decay=None,
@@ -138,7 +138,8 @@ class AdamWeightDecay(tf.keras.optimizers.Adam):
             **kwargs
     ):
         super().__init__(learning_rate, beta_1, beta_2, epsilon, amsgrad, name, **kwargs)
-        self.weight_decay_rate = weight_decay_rate
+        # This has been changed from the original implementation since we're using tensorflow 2.14.0
+        self.weight_decay = weight_decay
         self._include_in_weight_decay = include_in_weight_decay
         self._exclude_from_weight_decay = exclude_from_weight_decay
         self.layer_decay = layer_decay
@@ -152,13 +153,13 @@ class AdamWeightDecay(tf.keras.optimizers.Adam):
 
     def _prepare_local(self, var_device, var_dtype, apply_state):
         super()._prepare_local(var_device, var_dtype, apply_state)
-        apply_state["weight_decay_rate"] = tf.constant(self.weight_decay_rate, name="adam_weight_decay_rate")
+        apply_state["weight_decay"] = tf.constant(self.weight_decay, name="adam_weight_decay")
 
     def _decay_weights_op(self, var, learning_rate, apply_state):
         do_decay = self._do_use_weight_decay(var.name)
         if do_decay:
             return var.assign_sub(
-                learning_rate * var * apply_state["weight_decay_rate"], use_locking=self._use_locking
+                learning_rate * var * apply_state["weight_decay"], use_locking=self._use_locking
             )
         return tf.no_op()
 
@@ -275,12 +276,12 @@ class AdamWeightDecay(tf.keras.optimizers.Adam):
 
     def get_config(self):
         config = super().get_config()
-        config.update({"weight_decay_rate": self.weight_decay_rate})
+        config.update({"weight_decay": self.weight_decay})
         return config
 
     def _do_use_weight_decay(self, param_name):
         """Whether to use L2 weight decay for `param_name`."""
-        if self.weight_decay_rate == 0:
+        if self.weight_decay == 0:
             return False
 
         if self._include_in_weight_decay:

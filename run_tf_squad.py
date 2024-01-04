@@ -79,7 +79,7 @@ def parse_args():
     parser.add_argument("--train_batch_size", default=32, type=int, help="Total batch size for training.")
     parser.add_argument("--predict_batch_size", default=8, type=int, help="Total batch size for predictions.")
     parser.add_argument("--learning_rate", default=1e-4, type=float, help="The initial learning rate for Adam.")
-    parser.add_argument("--weight_decay_rate", default=0.01, type=float, help="Weight decay if we apply some.")
+    parser.add_argument("--weight_decay", default=0.01, type=float, help="Weight decay if we apply some.")
     parser.add_argument("--layerwise_lr_decay", default=0.8, type=float,
                         help="The layerwise learning rate decay. Shallower layers have lower learning rates.")
 
@@ -450,7 +450,7 @@ def main():
 
     opt = create_optimizer(init_lr=args.learning_rate, num_train_steps=total_train_steps,
                            num_warmup_steps=int(args.warmup_proportion * total_train_steps),
-                           weight_decay_rate=args.weight_decay_rate,
+                           weight_decay=args.weight_decay,
                            layerwise_lr_decay=args.layerwise_lr_decay,
                            n_transformer_layers=model.num_hidden_layers)
     if USE_AMP:
